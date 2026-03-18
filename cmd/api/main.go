@@ -1,3 +1,15 @@
+// Package main Soccer Manager API
+// @title           Soccer Manager API
+// @version         1.0
+// @description     RESTful API for fantasy football manager. Create teams, manage players, and trade on the transfer market.
+// @termsOfService  http://swagger.io/terms/
+// @contact.name    API Support
+// @license.name    MIT
+// @host            localhost:3000
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 package main
 
 import (
@@ -11,6 +23,7 @@ import (
 
 	"github.com/nika/soccer-manager-api/config"
 	"github.com/nika/soccer-manager-api/controller"
+	_ "github.com/nika/soccer-manager-api/docs"
 	"github.com/nika/soccer-manager-api/handler"
 	"github.com/nika/soccer-manager-api/pkg/migrate"
 	"github.com/nika/soccer-manager-api/repository"

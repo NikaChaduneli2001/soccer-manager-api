@@ -12,17 +12,20 @@ import (
 func JWT(secret string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
+			authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
 			if authHeader == "" {
 				response.Error(w, http.StatusUnauthorized, "missing authorization header")
 				return
 			}
 			const prefix = "Bearer "
-			if !strings.HasPrefix(authHeader, prefix) {
+			tokenString := authHeader
+			if strings.HasPrefix(authHeader, prefix) {
+				tokenString = strings.TrimSpace(authHeader[len(prefix):])
+			}
+			if tokenString == "" {
 				response.Error(w, http.StatusUnauthorized, "invalid authorization format")
 				return
 			}
-			tokenString := strings.TrimPrefix(authHeader, prefix)
 			userID, err := auth.ParseToken(tokenString, secret)
 			if err != nil {
 				response.Error(w, http.StatusUnauthorized, "invalid or expired token")

@@ -77,6 +77,17 @@ psql -h localhost -p 5432 -U soccer -d soccer_manager -f migrations/004_create_t
 
 Use the same host, port, user, and database as in your `.env` (or docker-compose). The password will be prompted unless you set `PGPASSWORD`.
 
+## API documentation (Swagger)
+
+With the API running, open **http://localhost:3000/swagger/index.html** for interactive Swagger UI. All endpoints are described there, including request/response schemas and the `Authorization: Bearer <token>` security scheme for protected routes.
+
+To regenerate the Swagger spec from code annotations, install the CLI and run:
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+make swagger-docs
+```
+
 ## Environment
 
 Copy `.env.example` to `.env` and adjust. Defaults work with `docker-compose` for DB connection.

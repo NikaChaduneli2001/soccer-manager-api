@@ -37,6 +37,10 @@ docker-build:
 clean:
 	rm -rf bin/
 
+# Regenerate Swagger docs from controller annotations (requires: go install github.com/swaggo/swag/cmd/swag@latest)
+swagger-docs:
+	swag init -g cmd/api/main.go --parseDependency --parseInternal
+
 # Run with hot reload (optional: requires air - go install github.com/cosmtrek/air@latest)
 # dev:
 # 	air

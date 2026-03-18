@@ -9,7 +9,17 @@ import (
 	"github.com/nika/soccer-manager-api/service"
 )
 
-// Signup handles POST /signup: create account, team, and 20 players; return user + JWT.
+// Signup creates an account, a team, and 20 players; returns user and JWT.
+// @Summary      Register
+// @Description  Create account with email/password. Automatically creates a team of 20 players (3 GK, 6 DEF, 6 MID, 5 ATT) and $5M budget.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.SignupRequest  true  "Signup payload"
+// @Success      201   {object}  models.AuthResponse
+// @Failure      400   {object}  models.ErrorResponse
+// @Failure      409   {object}  models.ErrorResponse
+// @Router       /signup [post]
 func (c *Controller) Signup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		response.Error(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -42,7 +52,16 @@ func (c *Controller) Signup(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, resp)
 }
 
-// Login handles POST /login: validate credentials and return JWT.
+// Login validates credentials and returns a JWT.
+// @Summary      Login
+// @Description  Authenticate with email and password, receive JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.LoginRequest  true  "Login payload"
+// @Success      200   {object}  models.AuthResponse
+// @Failure      401   {object}  models.ErrorResponse
+// @Router       /login [post]
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		response.Error(w, http.StatusMethodNotAllowed, "method not allowed")

@@ -37,6 +37,7 @@ var (
 	ErrCannotBuyOwnPlayer = errors.New("cannot buy your own player")
 	ErrTeamAlreadyExists  = errors.New("user already has a team")
 	ErrInvalidPosition    = errors.New("invalid position: must be goalkeeper, defender, midfielder, or attacker")
+	ErrUserNotFound       = errors.New("user not found")
 )
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
@@ -60,7 +61,7 @@ func (s *Service) Signup(email, password, fullname string, age int) (*models.Aut
 	if len(password) < 6 {
 		return nil, ErrPasswordShort
 	}
-	if age < 0 || age > 90 {
+	if age <= 0 || age > 90 {
 		return nil, ErrAgeInvalid
 	}
 	exists, err := s.Repo.ExistsUserByEmail(email)
@@ -120,6 +121,35 @@ func (s *Service) Login(email, password string) (*models.AuthResponse, error) {
 	return &models.AuthResponse{UserID: u.ID, Email: u.Email, FullName: u.FullName, Age: u.Age, Token: token}, nil
 }
 
+// CreateUser creates a user account only (no team, no players). For use with separate team creation.
+func (s *Service) CreateUser(email, password, fullname string, age int) (*models.User, error) {
+	if !emailRegex.MatchString(email) {
+		return nil, ErrEmailInvalid
+	}
+	if len(password) < 6 {
+		return nil, ErrPasswordShort
+	}
+	if age < 0 || age > 150 {
+		return nil, ErrAgeInvalid
+	}
+	exists, err := s.Repo.ExistsUserByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrEmailExists
+	}
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+	userID, err := s.Repo.CreateUser(email, hash, fullname, age)
+	if err != nil {
+		return nil, err
+	}
+	return s.Repo.GetUserByID(userID)
+}
+
 func (s *Service) generateToken(userID int64) (string, error) {
 	return auth.NewToken(userID, s.JWTSecret, s.JWTExpireHours)
 }
@@ -175,13 +205,23 @@ func (s *Service) GetTeam(userID int64) (*models.Team, error) {
 	return team, nil
 }
 
-func (s *Service) CreateTeam(userID int64) (*models.Team, error) {
-	_, err := s.Repo.GetTeamByUserID(userID)
+func (s *Service) CreateTeam(userID int64, name, country string, budget int64) (*models.Team, error) {
+	_, err := s.Repo.GetUserByID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	_, err = s.Repo.GetTeamByUserID(userID)
 	if err == nil {
 		return nil, ErrTeamAlreadyExists
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
+	}
+	if budget <= 0 {
+		budget = int64(InitialBudget)
 	}
 	tx, err := s.Repo.Begin()
 	if err != nil {
@@ -189,7 +229,7 @@ func (s *Service) CreateTeam(userID int64) (*models.Team, error) {
 	}
 	defer tx.Rollback()
 	totalValue := int64(TotalPlayers) * InitialPlayerValue
-	teamID, err := s.Repo.CreateTeamTx(tx, userID, "", "", int64(InitialBudget), totalValue)
+	teamID, err := s.Repo.CreateTeamTx(tx, userID, name, country, budget, totalValue)
 	if err != nil {
 		return nil, err
 	}

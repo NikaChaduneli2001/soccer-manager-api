@@ -66,6 +66,14 @@ type AuthResponse struct {
 	Token    string `json:"token"`
 }
 
+// CreateTeamRequest for POST /team (body: user_id, name, country, budget).
+type CreateTeamRequest struct {
+	UserID  int64  `json:"user_id"`
+	Name    string `json:"name"`
+	Country string `json:"country"`
+	Budget  int64  `json:"budget"`
+}
+
 // UpdateTeamRequest for PATCH/PUT team (name, country editable).
 type UpdateTeamRequest struct {
 	Name    string `json:"name"`
@@ -95,19 +103,24 @@ type ListPlayerRequest struct {
 
 // TransferMarketItem is one entry on the transfer market (player + asking price).
 type TransferMarketItem struct {
-	ListingID   int64  `json:"listing_id"`
-	PlayerID    int64  `json:"player_id"`
-	AskingPrice int64  `json:"asking_price"`
-	FirstName   string `json:"first_name"`
-	LastName    string `json:"last_name"`
-	Country     string `json:"country"`
-	Age         int    `json:"age"`
-	Position    string `json:"position"`
-	MarketValue int64  `json:"market_value"`
+	ListingID   int64     `json:"listing_id"`
+	PlayerID    int64     `json:"player_id"`
+	AskingPrice int64     `json:"asking_price"`
+	FirstName   string    `json:"first_name"`
+	LastName    string    `json:"last_name"`
+	Country     string    `json:"country"`
+	Age         int       `json:"age"`
+	Position    string    `json:"position"`
+	MarketValue int64     `json:"market_value"`
 	ListedAt    time.Time `json:"listed_at"`
 }
 
 // BuyPlayerRequest to purchase a player from the transfer list.
 type BuyPlayerRequest struct {
 	ListingID int64 `json:"listing_id"`
+}
+
+// ErrorResponse for API error responses (Swagger).
+type ErrorResponse struct {
+	Error string `json:"error" example:"error message"`
 }

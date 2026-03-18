@@ -6,6 +6,8 @@ import (
 	"github.com/nika/soccer-manager-api/controller"
 	"github.com/nika/soccer-manager-api/middleware"
 	"github.com/nika/soccer-manager-api/pkg/response"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Handler struct {
@@ -25,6 +27,8 @@ func (h *Handler) Router(jwtSecret string) http.Handler {
 	mux.Handle("/api/v1/login", middleware.Chain(middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.Login)))
 	mux.Handle("/api/v1/me", middleware.Chain(jwt, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.Me)))
 
+	mux.Handle("/api/v1/users", middleware.Chain(jwt, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.CreateUser)))
+
 	mux.Handle("/api/v1/team", middleware.Chain(jwt)(http.HandlerFunc(h.teamHandler)))
 	mux.Handle("/api/v1/team/players", middleware.Chain(jwt, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.GetTeamPlayers)))
 
@@ -33,6 +37,8 @@ func (h *Handler) Router(jwtSecret string) http.Handler {
 
 	mux.Handle("/api/v1/transfer/list", middleware.Chain(jwt)(http.HandlerFunc(h.transferListHandler)))
 	mux.Handle("/api/v1/transfer/buy", middleware.Chain(jwt, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.BuyPlayer)))
+
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	return mux
 }

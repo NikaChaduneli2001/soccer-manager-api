@@ -11,6 +11,20 @@ import (
 )
 
 // ListPlayerOnTransfer puts a player on the transfer list (POST /api/v1/transfer/list).
+// @Summary      List player on transfer market
+// @Description  Put one of your players on the transfer list with an asking price. Player must belong to your team and not already be listed.
+// @Tags         transfer
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.ListPlayerRequest  true  "Player ID and asking price"
+// @Success      201   {object}  map[string]string
+// @Failure      400   {object}  models.ErrorResponse
+// @Failure      401   {object}  models.ErrorResponse
+// @Failure      403   {object}  models.ErrorResponse
+// @Failure      404   {object}  models.ErrorResponse
+// @Failure      409   {object}  models.ErrorResponse
+// @Router       /transfer/list [post]
 func (c *Controller) ListPlayerOnTransfer(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	if userID == 0 {
@@ -45,6 +59,14 @@ func (c *Controller) ListPlayerOnTransfer(w http.ResponseWriter, r *http.Request
 }
 
 // GetTransferList returns all players on the market (GET /api/v1/transfer/list).
+// @Summary      Get transfer market list
+// @Description  Returns all players currently on the transfer list with asking prices
+// @Tags         transfer
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {array}   models.TransferMarketItem
+// @Failure      401  {object}  models.ErrorResponse
+// @Router       /transfer/list [get]
 func (c *Controller) GetTransferList(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	if userID == 0 {
@@ -60,6 +82,18 @@ func (c *Controller) GetTransferList(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuyPlayer purchases a player from the transfer list (POST /api/v1/transfer/buy).
+// @Summary      Buy player
+// @Description  Purchase a player from the transfer list at the asking price. Budgets are updated; player's market value increases 10–100% on transfer.
+// @Tags         transfer
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.BuyPlayerRequest  true  "Listing ID"
+// @Success      200   {object}  map[string]string
+// @Failure      400   {object}  models.ErrorResponse
+// @Failure      401   {object}  models.ErrorResponse
+// @Failure      404   {object}  models.ErrorResponse
+// @Router       /transfer/buy [post]
 func (c *Controller) BuyPlayer(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	if userID == 0 {

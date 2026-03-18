@@ -13,6 +13,18 @@ import (
 )
 
 // CreatePlayer adds a player to the authenticated user's team (POST /api/v1/players).
+// @Summary      Create player
+// @Description  Add a player to your team. Age is random 18–40, initial market value $1M. Position: goalkeeper, defender, midfielder, attacker.
+// @Tags         players
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.CreatePlayerRequest  true  "Player details"
+// @Success      201   {object}  models.Player
+// @Failure      400   {object}  models.ErrorResponse
+// @Failure      401   {object}  models.ErrorResponse
+// @Failure      404   {object}  models.ErrorResponse
+// @Router       /players [post]
 func (c *Controller) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	if userID == 0 {
@@ -41,6 +53,20 @@ func (c *Controller) CreatePlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdatePlayer updates first name, last name, country of a player (PUT /api/v1/players/:id).
+// @Summary      Update player
+// @Description  Update player first name, last name, country (editable by team owner). Only your team's players.
+// @Tags         players
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int  true  "Player ID"
+// @Param        body  body      models.UpdatePlayerRequest  true  "Player details"
+// @Success      200   {object}  map[string]string
+// @Failure      400   {object}  models.ErrorResponse
+// @Failure      401   {object}  models.ErrorResponse
+// @Failure      403   {object}  models.ErrorResponse
+// @Failure      404   {object}  models.ErrorResponse
+// @Router       /players/{id} [put]
 func (c *Controller) UpdatePlayer(w http.ResponseWriter, r *http.Request) {
 	userID := auth.UserIDFromContext(r.Context())
 	if userID == 0 {

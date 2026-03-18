@@ -18,6 +18,12 @@ func NewController(svc *service.Service) *Controller {
 }
 
 // Health returns service health status.
+// @Summary      Health check
+// @Description  Returns API health status
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Router       /health [get]
 func (c *Controller) Health(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
@@ -30,6 +36,15 @@ func (c *Controller) Health(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
+// Me returns the current authenticated user ID.
+// @Summary      Current user
+// @Description  Returns the authenticated user ID from the JWT
+// @Tags         auth
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string]int64
+// @Failure      401  {object}  models.ErrorResponse
+// @Router       /me [get]
 func (c *Controller) Me(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		response.Error(w, http.StatusMethodNotAllowed, "method not allowed")
