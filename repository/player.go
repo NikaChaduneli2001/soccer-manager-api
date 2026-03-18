@@ -48,3 +48,36 @@ func (db *DB) GetPlayersByTeamID(teamID int64) ([]models.Player, error) {
 	}
 	return list, rows.Err()
 }
+
+func (db *DB) GetPlayerByID(id int64) (*models.Player, error) {
+	var p models.Player
+	err := db.QueryRow(`
+		SELECT id, team_id, first_name, last_name, country, age, position, market_value, created_at, updated_at
+		FROM players WHERE id = $1
+	`, id).Scan(&p.ID, &p.TeamID, &p.FirstName, &p.LastName, &p.Country, &p.Age, &p.Position, &p.MarketValue, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (db *DB) UpdatePlayerDetails(id int64, firstName, lastName, country string) error {
+	_, err := db.Exec(`
+		UPDATE players SET first_name = $1, last_name = $2, country = $3, updated_at = NOW() WHERE id = $4
+	`, firstName, lastName, country, id)
+	return err
+}
+
+func (db *DB) UpdatePlayerTeamAndValue(id int64, teamID int64, marketValue int64) error {
+	_, err := db.Exec(`
+		UPDATE players SET team_id = $1, market_value = $2, updated_at = NOW() WHERE id = $3
+	`, teamID, marketValue, id)
+	return err
+}
+
+func (db *DB) UpdatePlayerTeamAndValueTx(tx *sql.Tx, id int64, teamID int64, marketValue int64) error {
+	_, err := tx.Exec(`
+		UPDATE players SET team_id = $1, market_value = $2, updated_at = NOW() WHERE id = $3
+	`, teamID, marketValue, id)
+	return err
+}

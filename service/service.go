@@ -28,6 +28,15 @@ var (
 	ErrPasswordShort      = errors.New("password too short")
 	ErrAgeInvalid         = errors.New("age must be between 0 and 150")
 	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrTeamNotFound       = errors.New("team not found")
+	ErrPlayerNotFound     = errors.New("player not found")
+	ErrNotYourPlayer      = errors.New("player does not belong to your team")
+	ErrAlreadyListed      = errors.New("player is already on transfer list")
+	ErrInsufficientBudget = errors.New("insufficient budget")
+	ErrListingNotFound    = errors.New("listing not found")
+	ErrCannotBuyOwnPlayer = errors.New("cannot buy your own player")
+	ErrTeamAlreadyExists  = errors.New("user already has a team")
+	ErrInvalidPosition    = errors.New("invalid position: must be goalkeeper, defender, midfielder, or attacker")
 )
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
@@ -143,4 +152,235 @@ func generateInitialSquad(teamID int64) []models.Player {
 		}
 	}
 	return players
+}
+
+// GetTeam returns the authenticated user's team (total_value = sum of player values).
+func (s *Service) GetTeam(userID int64) (*models.Team, error) {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTeamNotFound
+		}
+		return nil, err
+	}
+	players, err := s.Repo.GetPlayersByTeamID(team.ID)
+	if err != nil {
+		return nil, err
+	}
+	var totalValue int64
+	for _, p := range players {
+		totalValue += p.MarketValue
+	}
+	team.TotalValue = totalValue
+	return team, nil
+}
+
+func (s *Service) CreateTeam(userID int64) (*models.Team, error) {
+	_, err := s.Repo.GetTeamByUserID(userID)
+	if err == nil {
+		return nil, ErrTeamAlreadyExists
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	tx, err := s.Repo.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	totalValue := int64(TotalPlayers) * InitialPlayerValue
+	teamID, err := s.Repo.CreateTeamTx(tx, userID, "", "", int64(InitialBudget), totalValue)
+	if err != nil {
+		return nil, err
+	}
+	players := generateInitialSquad(teamID)
+	if err := s.Repo.CreatePlayersTx(tx, teamID, players); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	team, err := s.Repo.GetTeamByID(teamID)
+	if err != nil {
+		return nil, err
+	}
+	team.TotalValue = totalValue
+	return team, nil
+}
+
+func (s *Service) UpdateTeam(userID int64, name, country string) error {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrTeamNotFound
+		}
+		return err
+	}
+	return s.Repo.UpdateTeamNameCountry(team.ID, name, country)
+}
+
+// GetTeamPlayers returns all players for the authenticated user's team.
+func (s *Service) GetTeamPlayers(userID int64) ([]models.Player, error) {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTeamNotFound
+		}
+		return nil, err
+	}
+	return s.Repo.GetPlayersByTeamID(team.ID)
+}
+
+var validPositions = map[string]bool{
+	"goalkeeper": true, "defender": true, "midfielder": true, "attacker": true,
+}
+
+func (s *Service) CreatePlayer(userID int64, firstName, lastName, country, position string) (*models.Player, error) {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTeamNotFound
+		}
+		return nil, err
+	}
+	if !validPositions[position] {
+		return nil, ErrInvalidPosition
+	}
+	age := 18 + rand.Intn(23) // 18..40
+	playerID, err := s.Repo.CreatePlayer(team.ID, firstName, lastName, country, age, position, InitialPlayerValue)
+	if err != nil {
+		return nil, err
+	}
+	return s.Repo.GetPlayerByID(playerID)
+}
+
+func (s *Service) UpdatePlayer(userID int64, playerID int64, firstName, lastName, country string) error {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrTeamNotFound
+		}
+		return err
+	}
+	player, err := s.Repo.GetPlayerByID(playerID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrPlayerNotFound
+		}
+		return err
+	}
+	if player.TeamID != team.ID {
+		return ErrNotYourPlayer
+	}
+	return s.Repo.UpdatePlayerDetails(playerID, firstName, lastName, country)
+}
+
+func (s *Service) ListPlayerOnTransfer(userID int64, playerID int64, askingPrice int64) error {
+	team, err := s.Repo.GetTeamByUserID(userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrTeamNotFound
+		}
+		return err
+	}
+	player, err := s.Repo.GetPlayerByID(playerID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrPlayerNotFound
+		}
+		return err
+	}
+	if player.TeamID != team.ID {
+		return ErrNotYourPlayer
+	}
+	if askingPrice <= 0 {
+		return errors.New("asking price must be positive")
+	}
+	_, err = s.Repo.GetTransferListingByPlayerID(playerID)
+	if err == nil {
+		return ErrAlreadyListed
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	return s.Repo.CreateTransferListing(playerID, askingPrice)
+}
+
+// GetTransferList returns all players on the transfer market with asking price.
+func (s *Service) GetTransferList() ([]models.TransferMarketItem, error) {
+	items, err := s.Repo.ListTransferListings()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]models.TransferMarketItem, len(items))
+	for i := range items {
+		out[i] = models.TransferMarketItem{
+			ListingID:   items[i].Listing.ID,
+			PlayerID:    items[i].Player.ID,
+			AskingPrice: items[i].Listing.AskingPrice,
+			FirstName:   items[i].Player.FirstName,
+			LastName:    items[i].Player.LastName,
+			Country:     items[i].Player.Country,
+			Age:         items[i].Player.Age,
+			Position:    items[i].Player.Position,
+			MarketValue: items[i].Player.MarketValue,
+			ListedAt:    items[i].Listing.ListedAt,
+		}
+	}
+	return out, nil
+}
+
+func (s *Service) BuyPlayer(buyerUserID int64, listingID int64) error {
+	listing, err := s.Repo.GetTransferListingByID(listingID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrListingNotFound
+		}
+		return err
+	}
+	player, err := s.Repo.GetPlayerByID(listing.PlayerID)
+	if err != nil {
+		return err
+	}
+	sellerTeam, err := s.Repo.GetTeamByID(player.TeamID)
+	if err != nil {
+		return err
+	}
+	buyerTeam, err := s.Repo.GetTeamByUserID(buyerUserID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrTeamNotFound
+		}
+		return err
+	}
+	if sellerTeam.ID == buyerTeam.ID {
+		return ErrCannotBuyOwnPlayer
+	}
+	if buyerTeam.Budget < listing.AskingPrice {
+		return ErrInsufficientBudget
+	}
+	// 10% to 100% random increase on transfer (e.g. 1.1 to 2.0 multiplier)
+	increase := 1.0 + 0.1*float64(rand.Intn(10)+1) // 1.1 .. 2.0
+	newValue := int64(float64(player.MarketValue) * increase)
+	if newValue < player.MarketValue {
+		newValue = player.MarketValue
+	}
+	tx, err := s.Repo.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.Repo.UpdatePlayerTeamAndValueTx(tx, player.ID, buyerTeam.ID, newValue); err != nil {
+		return err
+	}
+	if err := s.Repo.UpdateTeamBudgetAndValueTx(tx, sellerTeam.ID, sellerTeam.Budget+listing.AskingPrice, sellerTeam.TotalValue-player.MarketValue); err != nil {
+		return err
+	}
+	if err := s.Repo.UpdateTeamBudgetAndValueTx(tx, buyerTeam.ID, buyerTeam.Budget-listing.AskingPrice, buyerTeam.TotalValue+newValue); err != nil {
+		return err
+	}
+	if err := s.Repo.DeleteTransferListingByPlayerIDTx(tx, player.ID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
