@@ -1,6 +1,11 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+
+	"github.com/nika/soccer-manager-api/pkg/response"
+)
 
 type Middleware func(http.Handler) http.Handler
 
@@ -11,5 +16,21 @@ func Chain(ms ...Middleware) Middleware {
 			next = ms[i](next)
 		}
 		return next
+	}
+}
+
+func Method(methods ...string) Middleware {
+	allowed := make(map[string]bool)
+	for _, m := range methods {
+		allowed[strings.ToUpper(m)] = true
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !allowed[r.Method] {
+				response.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
 	}
 }

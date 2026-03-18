@@ -32,13 +32,12 @@ type DatabaseConfig struct {
 
 // AppConfig holds application-level settings.
 type AppConfig struct {
-	Env          string
-	JWTSecret    string
+	Env            string
+	JWTSecret      string
 	JWTExpireHours int
 }
 
 // Load reads configuration from environment variables.
-// If a .env file exists, it is loaded first (e.g. when running locally).
 func Load() *Config {
 	_ = godotenv.Load()
 	return &Config{
@@ -55,8 +54,8 @@ func Load() *Config {
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
 		App: AppConfig{
-			Env:           getEnv("APP_ENV", "development"),
-			JWTSecret:     getEnv("JWT_SECRET", "change-me-in-production"),
+			Env:            getEnv("APP_ENV", "development"),
+			JWTSecret:      getEnv("JWT_SECRET", "ascjnajskcnlkascklalscnk"),
 			JWTExpireHours: getEnvInt("JWT_EXPIRE_HOURS", 24),
 		},
 	}

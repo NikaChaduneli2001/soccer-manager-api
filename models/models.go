@@ -5,6 +5,8 @@ import "time"
 type User struct {
 	ID        int64     `json:"id"`
 	Email     string    `json:"email"`
+	FullName  string    `json:"fullname"`
+	Age       int       `json:"age"`
 	Password  string    `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -39,4 +41,27 @@ type TransferListing struct {
 	PlayerID    int64     `json:"player_id"`
 	AskingPrice int64     `json:"asking_price"`
 	ListedAt    time.Time `json:"listed_at"`
+}
+
+// SignupRequest is the input for user registration.
+type SignupRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	FullName string `json:"fullname"`
+	Age      int    `json:"age"`
+}
+
+// LoginRequest is the input for login.
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// AuthResponse is returned on signup/login.
+type AuthResponse struct {
+	UserID   int64  `json:"user_id"`
+	Email    string `json:"email"`
+	FullName string `json:"fullname"`
+	Age      int    `json:"age"`
+	Token    string `json:"token"`
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/nika/soccer-manager-api/config"
 	"github.com/nika/soccer-manager-api/controller"
 	"github.com/nika/soccer-manager-api/handler"
+	"github.com/nika/soccer-manager-api/pkg/migrate"
 	"github.com/nika/soccer-manager-api/repository"
 	"github.com/nika/soccer-manager-api/service"
 )
@@ -26,12 +27,15 @@ func main() {
 	} else {
 		repo = db
 		defer repo.Close()
+		if err := migrate.Run(repo.DB); err != nil {
+			log.Printf("migrations: %v", err)
+		}
 	}
 
-	svc := service.NewService(repo)
+	svc := service.NewService(repo, cfg.App.JWTSecret, cfg.App.JWTExpireHours)
 	ctrl := controller.NewController(svc)
 	h := handler.NewHandler(ctrl)
-	mux := h.Router()
+	mux := h.Router(cfg.App.JWTSecret)
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
 	srv := &http.Server{
