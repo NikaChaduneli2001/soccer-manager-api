@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    env_file: .env
+    ports:
+      - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
+    environment:
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+      SERVER_PORT: ${SERVER_PORT:-3000}
+      DB_HOST: db  # service name 
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-soccer}
+      DB_PASSWORD: ${DB_PASSWORD:-soccer}
+      DB_NAME: ${DB_NAME:-soccer_manager}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-soccer}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-soccer}
+      POSTGRES_DB: ${DB_NAME:-soccer_manager}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soccer -d soccer_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
