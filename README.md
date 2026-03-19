@@ -23,7 +23,7 @@ RESTful API for a fantasy football manager application. Built with Go.
 
 ## Prerequisites
 
-- Go 1.22+
+- Go 1.24+
 - Docker & Docker Compose (for full stack with PostgreSQL)
 
 ## Quick start
