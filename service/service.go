@@ -26,7 +26,7 @@ var (
 	ErrEmailInvalid       = errors.New("invalid email")
 	ErrEmailExists        = errors.New("email already registered")
 	ErrPasswordShort      = errors.New("password too short")
-	ErrAgeInvalid         = errors.New("age must be between 0 and 150")
+	ErrAgeInvalid         = errors.New("age must be between 18 and 90")
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrTeamNotFound       = errors.New("team not found")
 	ErrPlayerNotFound     = errors.New("player not found")
@@ -61,7 +61,7 @@ func (s *Service) Signup(email, password, fullname string, age int) (*models.Aut
 	if len(password) < 6 {
 		return nil, ErrPasswordShort
 	}
-	if age <= 0 || age > 90 {
+	if age < 18 || age > 90 {
 		return nil, ErrAgeInvalid
 	}
 	exists, err := s.Repo.ExistsUserByEmail(email)

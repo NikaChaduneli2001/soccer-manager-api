@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     fullname VARCHAR(255) NOT NULL DEFAULT '',
-    age INT NOT NULL DEFAULT 0 CHECK (age >= 0 AND age <= 90),
+    age INT NOT NULL DEFAULT 0 CHECK (age >= 18 AND age <= 90),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -12,6 +12,10 @@ build:
 test:
 	go test ./...
 
+
+test-cgo:
+	CGO_ENABLED=0 go test ./...
+
 # Download and tidy dependencies
 tidy:
 	go mod tidy
