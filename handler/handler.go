@@ -22,21 +22,21 @@ func (h *Handler) Router(jwtSecret string) http.Handler {
 	mux := http.NewServeMux()
 	jwt := middleware.JWT(jwtSecret)
 
-	mux.Handle("/api/v1/health", middleware.Chain(middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.Health)))
-	mux.Handle("/api/v1/signup", middleware.Chain(middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.Signup)))
-	mux.Handle("/api/v1/login", middleware.Chain(middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.Login)))
-	mux.Handle("/api/v1/me", middleware.Chain(jwt, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.Me)))
+	mux.Handle("/api/v1/health", middleware.Chain(middleware.Throttle, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.Health)))
+	mux.Handle("/api/v1/signup", middleware.Chain(middleware.Throttle, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.Signup)))
+	mux.Handle("/api/v1/login", middleware.Chain(middleware.Throttle, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.Login)))
+	mux.Handle("/api/v1/me", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.Me)))
 
-	mux.Handle("/api/v1/users", middleware.Chain(jwt, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.CreateUser)))
+	mux.Handle("/api/v1/users", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.CreateUser)))
 
-	mux.Handle("/api/v1/team", middleware.Chain(jwt)(http.HandlerFunc(h.teamHandler)))
-	mux.Handle("/api/v1/team/players", middleware.Chain(jwt, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.GetTeamPlayers)))
+	mux.Handle("/api/v1/team", middleware.Chain(jwt, middleware.Throttle)(http.HandlerFunc(h.teamHandler)))
+	mux.Handle("/api/v1/team/players", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodGet))(http.HandlerFunc(h.Controller.GetTeamPlayers)))
 
-	mux.Handle("/api/v1/players", middleware.Chain(jwt, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.CreatePlayer)))
-	mux.Handle("/api/v1/players/", middleware.Chain(jwt, middleware.Method(http.MethodPut))(http.HandlerFunc(h.Controller.UpdatePlayer)))
+	mux.Handle("/api/v1/players", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.CreatePlayer)))
+	mux.Handle("/api/v1/players/", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodPut))(http.HandlerFunc(h.Controller.UpdatePlayer)))
 
-	mux.Handle("/api/v1/transfer/list", middleware.Chain(jwt)(http.HandlerFunc(h.transferListHandler)))
-	mux.Handle("/api/v1/transfer/buy", middleware.Chain(jwt, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.BuyPlayer)))
+	mux.Handle("/api/v1/transfer/list", middleware.Chain(jwt, middleware.Throttle)(http.HandlerFunc(h.transferListHandler)))
+	mux.Handle("/api/v1/transfer/buy", middleware.Chain(jwt, middleware.Throttle, middleware.Method(http.MethodPost))(http.HandlerFunc(h.Controller.BuyPlayer)))
 
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
